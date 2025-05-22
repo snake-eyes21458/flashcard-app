@@ -46,6 +46,8 @@ def generate():
 
 import textwrap
 
+import textwrap
+
 def generate_flashcards_from_ai(subject):
     HF_TOKEN = os.getenv("HF_TOKEN")
     API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1"
@@ -66,12 +68,19 @@ def generate_flashcards_from_ai(subject):
 
     try:
         json_data = response.json()
+        print("DEBUG FULL RESPONSE:", json_data)  # For now, log what we get
 
+        # Handle error responses (e.g., model is loading)
+        if isinstance(json_data, dict) and "error" in json_data:
+            return [{"term": "Error", "definition": f"Hugging Face API Error: {json_data['error']}"}]
+
+        # Check for expected format
         if isinstance(json_data, list) and "generated_text" in json_data[0]:
             output = json_data[0]["generated_text"]
         else:
             return [{"term": "Error", "definition": "Unexpected API response structure"}]
 
+        # Extract only JSON content
         json_start = output.find("[")
         json_end = output.rfind("]") + 1
         json_str = output[json_start:json_end]
@@ -80,6 +89,7 @@ def generate_flashcards_from_ai(subject):
 
     except Exception as e:
         return [{"term": "Error", "definition": f"Failed to parse response: {str(e)}"}]
+
 
 
 

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flashcard App</title>
+</head>
+<body>
+    <h1>Flashcards</h1>
+
+    <h2>Add a Flashcard</h2>
+    <form method="post" action="/add">
+        <input name="term" placeholder="Term" required>
+        <input name="definition" placeholder="Definition" required>
+        <button type="submit">Add</button>
+    </form>
+
+    <h2>Generate Flashcards with AI</h2>
+    <form method="post" action="/generate">
+        <input name="subject" placeholder="Enter a subject (e.g. Photosynthesis)" required>
+        <button type="submit">Generate</button>
+    </form>
+
+    <form method="post" action="/clear">
+        <button type="submit">Clear All</button>
+    </form>
+
+    <ul>
+        {% for card in flashcards %}
+        <li><strong>{{ card.term }}</strong>: {{ card.definition }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

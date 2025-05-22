@@ -44,29 +44,44 @@ def generate():
     save_flashcards(flashcards)
     return redirect(url_for('home'))
 
+import textwrap
+
 def generate_flashcards_from_ai(subject):
-    HF_TOKEN = os.getenv("HF_TOKEN")  # <-- Set this on Render
+    HF_TOKEN = os.getenv("HF_TOKEN")
     API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1"
     headers = {
         "Authorization": f"Bearer {HF_TOKEN}"
     }
 
-    prompt = f"""
-    Generate 3 flashcards in JSON format for the topic: "{subject}".
-    Format:
-    [
-      {{"term": "Term1", "definition": "Definition1"}},
-      ...
-    ]
-    """
+    prompt = textwrap.dedent(f"""
+        You are an AI flashcard generator. Your job is to output 3 flashcards on the topic "{subject}" in raw JSON format only, like this:
+        [
+          {{"term": "Example Term", "definition": "Example Definition"}},
+          ...
+        ]
+        DO NOT include any explanation or additional text. ONLY return the JSON array.
+    """)
 
     response = requests.post(API_URL, headers=headers, json={"inputs": prompt})
 
     try:
-        output = response.json()[0]["generated_text"]
-        return json.loads(output)
+        json_data = response.json()
+
+        if isinstance(json_data, list) and "generated_text" in json_data[0]:
+            output = json_data[0]["generated_text"]
+        else:
+            return [{"term": "Error", "definition": "Unexpected API response structure"}]
+
+        json_start = output.find("[")
+        json_end = output.rfind("]") + 1
+        json_str = output[json_start:json_end]
+
+        return json.loads(json_str)
+
     except Exception as e:
         return [{"term": "Error", "definition": f"Failed to parse response: {str(e)}"}]
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)

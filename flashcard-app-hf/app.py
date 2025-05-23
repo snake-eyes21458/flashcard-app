@@ -49,8 +49,8 @@ def generate_flashcards_from_ai(subject):
     api_key = os.getenv("COHERE_API_KEY")
     co = cohere.Client(api_key)
 
-    prompt = f(
-    "Generate 3 educational flashcards about the topic: \"{subject}\".\n"
+    prompt = (
+    f"Generate 3 educational flashcards about the topic: \"{subject}\".\n"
     "Format the response strictly as a JSON list like:\n"
     "[\n"
     "  {{\"term\": \"Term1\", \"definition\": \"Definition1\"}},\n"

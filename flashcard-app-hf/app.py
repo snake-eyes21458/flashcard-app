@@ -48,43 +48,45 @@ def generate():
 def generate_flashcards_from_ai(subject):
     api_key = os.getenv("COHERE_API_KEY")
     if not api_key:
-        return [{"term":"Error","definition":"Missing COHERE_API_KEY"}]
+        return [{"term": "Error", "definition": "Missing COHERE_API_KEY"}]
 
     co = cohere.Client(api_key)
 
-    try:
-        # Build prompt via list-of-lines to avoid any indentation issues
-        lines = [
-            f'Generate 3 educational flashcards about the topic: "{subject}".',
-            "Format the response strictly as a JSON list like:",
-            "[",
-            '  {"term": "Term1", "definition": "Definition1"},',
-            "  ...",
-            "]",
-            "Only return the JSON, nothing else."
-        ]
-        prompt = "\n".join(lines)
+    # Build a simple, un‐indented prompt
+    prompt = (
+        f'Generate 3 educational flashcards about the topic: "{subject}".\n'
+        "Return them _only_ as a JSON array in this format:\n"
+        "[\n"
+        '  {"term": "Term1", "definition": "Definition1"},\n'
+        "  ...\n"
+        "]\n"
+    )
 
-        # Send to Cohere chat
+    try:
+        # 1) Pass it in a list under `messages`
         response = co.chat(
             model="command-r",
-            query=prompt,
+            messages=[
+                {"role": "system", "content": "You are an AI that creates flashcards."},
+                {"role": "user",   "content": prompt}
+            ],
             temperature=0.6
         )
 
-        # Debug the raw text in your logs
-        print("RAW COHERE RESPONSE:", response.text)
+        # 2) Extract the actual text from the first choice
+        output = response.choices[0].message.content
+        print("RAW COHERE RESPONSE:", output)   # check your logs
 
-        # Extract the JSON array
-        output     = response.text
-        start_idx  = output.find("[")
-        end_idx    = output.rfind("]") + 1
-        if start_idx == -1 or end_idx == 0:
-            raise ValueError("No JSON brackets found")
+        # 3) Slice out the JSON
+        start = output.find("[")
+        end   = output.rfind("]") + 1
+        if start == -1 or end == 0:
+            raise ValueError("No JSON array found")
 
-        json_str = output[start_idx:end_idx]
+        json_str = output[start:end]
         return json.loads(json_str)
 
     except Exception as e:
         return [{"term": "Error", "definition": f"Failed to generate flashcards: {e}"}]
+
 

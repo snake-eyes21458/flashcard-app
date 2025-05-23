@@ -52,36 +52,35 @@ def generate_flashcards_from_ai(subject):
 
     co = cohere.Client(api_key)
 
-    # Build a simple, un‐indented prompt
-    prompt = (
-        f'Generate 3 educational flashcards about the topic: "{subject}".\n'
-        "Return them _only_ as a JSON array in this format:\n"
-        "[\n"
-        '  {"term": "Term1", "definition": "Definition1"},\n'
-        "  ...\n"
-        "]\n"
-    )
+    # Build a clean, un-indented prompt
+    prompt_lines = [
+        f'Generate 3 educational flashcards about the topic: "{subject}".',
+        "Return ONLY a JSON array, formatted like:",
+        "[",
+        '  {"term": "Term1", "definition": "Definition1"},',
+        "  ...",
+        "]",
+    ]
+    prompt = "\n".join(prompt_lines)
 
     try:
-        # 1) Pass it in a list under `messages`
-        response = co.chat(
-            model="command-r",
-            messages=[
-                {"role": "system", "content": "You are an AI that creates flashcards."},
-                {"role": "user",   "content": prompt}
-            ],
-            temperature=0.6
+        # Use a generate model (supported by generate())
+        response = co.generate(
+            model="command-xlarge-nightly",  # ← this one works with generate()
+            prompt=prompt,
+            max_tokens=200,
+            temperature=0.6,
         )
 
-        # 2) Extract the actual text from the first choice
-        output = response.choices[0].message.content
-        print("RAW COHERE RESPONSE:", output)   # check your logs
+        # Grab the raw text
+        output = response.generations[0].text
+        print("RAW COHERE OUTPUT:", output)   # check your logs
 
-        # 3) Slice out the JSON
+        # Extract the JSON substring
         start = output.find("[")
         end   = output.rfind("]") + 1
         if start == -1 or end == 0:
-            raise ValueError("No JSON array found")
+            raise ValueError("Could not find JSON in AI output")
 
         json_str = output[start:end]
         return json.loads(json_str)
